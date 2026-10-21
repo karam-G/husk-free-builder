@@ -17,8 +17,7 @@ concurrency:
 
 jobs:
   build:
-    # StikJIT in this source tree was built with Swift 6.4. The Xcode 27
-    # runner provides the matching compiler; macos-15-intel ships Swift 6.1.
+    # StikJIT requires Swift 6.4; the xcode-27 runner provides it.
     runs-on: xcode-27
     timeout-minutes: 360
     steps:
@@ -41,6 +40,9 @@ jobs:
           swift --version
           swift --version | grep -F 'Swift version 6.4'
           xcrun --sdk iphoneos --show-sdk-version
+          # Xcode 27 runner image does not necessarily include the Metal compiler.
+          xcodebuild -downloadComponent MetalToolchain
+          xcrun --find metal
 
       - name: Install build tools
         env:

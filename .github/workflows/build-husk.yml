@@ -2,6 +2,11 @@ name: Build private Husk IPA
 
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-husk.yml
 
 permissions:
   contents: read

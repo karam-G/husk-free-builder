@@ -17,7 +17,9 @@ concurrency:
 
 jobs:
   build:
-    runs-on: macos-15-intel
+    # StikJIT in this source tree was built with Swift 6.4. The Xcode 27
+    # runner provides the matching compiler; macos-15-intel ships Swift 6.1.
+    runs-on: xcode-27
     timeout-minutes: 360
     steps:
       - name: Check out helper
@@ -37,6 +39,7 @@ jobs:
           set -euo pipefail
           xcodebuild -version
           swift --version
+          swift --version | grep -F 'Swift version 6.4'
           xcrun --sdk iphoneos --show-sdk-version
 
       - name: Install build tools
@@ -44,14 +47,12 @@ jobs:
           HOMEBREW_NO_AUTO_UPDATE: "1"
         run: |
           set -euo pipefail
-          # The runner already has Python 3.12 installed outside Homebrew.
-          # Do not brew-install python@3.12: its link step conflicts with that Python.
           brew install autoconf automake libtool pkg-config meson ninja xcodegen cmake qemu
           command -v qemu-img
           qemu-img --version
-          command -v python3.12
-          python3.12 --version
-          python3.12 -m pip install --target "$GITHUB_WORKSPACE/source/build/python" PyYAML
+          command -v python3
+          python3 --version
+          python3 -m pip install --target "$GITHUB_WORKSPACE/source/build/python" PyYAML
           meson --version
           ninja --version
           xcodegen --version

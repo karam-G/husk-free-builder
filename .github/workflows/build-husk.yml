@@ -28,7 +28,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: karam-G/Husk-Audit
-          ref: husk-windows-build
+          ref: trim-unneeded-components
           token: ${{ secrets.HUSK_READ_TOKEN }}
           path: source
           submodules: recursive

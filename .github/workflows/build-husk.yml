@@ -34,6 +34,17 @@ jobs:
           path: source
           submodules: recursive
 
+      - name: Preflight source dependencies
+        working-directory: source
+        run: |
+          set -euo pipefail
+          grep -F '#include "husk-console-host.h"' src/app/Husk/HuskBridge.h
+          grep -F 'husk_console_install_package' src/translation-layer-next/husk-console-host.h
+          grep -F 'case .ps4' src/app/Husk/ConsoleUI.swift
+          test -f src/app/Husk/PS4Screen.swift
+          test -f src/translation-layer-next/husk-console-host.c
+          echo "Source dependency preflight passed."
+
       - name: Verify Apple build toolchain
         run: |
           set -euo pipefail

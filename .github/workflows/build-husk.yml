@@ -12,7 +12,8 @@ permissions:
   contents: read
 
 concurrency:
-  group: husk-private-build
+  # Avoid a stale GitHub runner lock preventing the repaired build from starting.
+  group: husk-private-build-${{ github.run_id }}
   cancel-in-progress: false
 
 jobs:

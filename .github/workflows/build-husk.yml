@@ -41,6 +41,7 @@ jobs:
           grep -F '#include "husk-console-host.h"' src/app/Husk/HuskBridge.h
           grep -F 'husk_console_install_package' src/translation-layer-next/husk-console-host.h
           grep -F 'case .ps4' src/app/Husk/ConsoleUI.swift
+          grep -F 'case ps4(PS4Game)' src/app/Husk/Launcher.swift
           test -f src/app/Husk/PS4Screen.swift
           test -f src/translation-layer-next/husk-console-host.c
           echo "Source dependency preflight passed."

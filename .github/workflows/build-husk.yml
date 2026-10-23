@@ -20,6 +20,7 @@ jobs:
   build:
     # StikJIT requires Swift 6.4; the xcode-27 runner provides it.
     # Rebuild after restoring dependencies needed by remaining source references.
+    # Rebuild trigger: verify the Release-only native C optimization change.
     runs-on: xcode-27
     timeout-minutes: 360
     steps:

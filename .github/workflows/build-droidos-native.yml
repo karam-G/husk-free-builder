@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build:
     runs-on: xcode-27
-    timeout-minutes: 25
+    timeout-minutes: 26
     steps:
       - name: Check out public builder
         uses: actions/checkout@v4
@@ -73,6 +73,17 @@ jobs:
             -derivedDataPath "$RUNNER_TEMP/droidos-derived" \
             CODE_SIGNING_ALLOWED=NO \
             build
+
+      - name: Verify built app bundle
+        run: |
+          set -euo pipefail
+          APP_PATH="$RUNNER_TEMP/droidos-derived/Build/Products/Release-iphoneos/DroidOS.app"
+          test -d "$APP_PATH"
+          plutil -lint "$APP_PATH/Info.plist"
+          /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.plist" | grep -Fx 'com.karam.droidos.native'
+          /usr/libexec/PlistBuddy -c 'Print :UILaunchStoryboardName' "$APP_PATH/Info.plist" | grep -Fx 'LaunchScreen'
+          /usr/libexec/PlistBuddy -c 'Print :UIRequiresFullScreen' "$APP_PATH/Info.plist" | grep -Fx 'true'
+          test -d "$APP_PATH/Base.lproj/LaunchScreen.storyboardc" || test -d "$APP_PATH/LaunchScreen.storyboardc"
 
       - name: Package and encrypt IPA
         env:

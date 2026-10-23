@@ -1,4 +1,4 @@
-name: Build private Husk IPA
+name: Build private DroidOS IPA
 
 on:
   workflow_dispatch:
@@ -20,9 +20,9 @@ jobs:
   build:
     # StikJIT requires Swift 6.4; the xcode-27 runner provides it.
     # Rebuild after restoring dependencies needed by remaining source references.
-    # Rebuild trigger: compile and validate the AndroidOS core branch.
+    # DroidOS: fast source/project checks before the native build; 60-minute hard limit.
     runs-on: xcode-27
-    timeout-minutes: 360
+    timeout-minutes: 60
     steps:
       - name: Check out helper
         uses: actions/checkout@v4
@@ -49,6 +49,19 @@ jobs:
           test -f src/translation-layer-next/husk-console-host.c
           echo "Source dependency preflight passed."
 
+      - name: Fast source validation
+        working-directory: source
+        run: |
+          set -euo pipefail
+          swiftc -frontend -parse \
+            src/app/Husk/ContentView.swift \
+            src/app/Husk/BootScreen.swift \
+            src/app/Husk/GuestImage.swift \
+            src/app/Husk/HuskApp.swift \
+            src/app/Husk/OnboardingView.swift
+          plutil -lint src/app/Husk/Info.plist
+          echo "Changed Swift files and Info.plist passed fast validation."
+
       - name: Verify Apple build toolchain
         run: |
           set -euo pipefail
@@ -74,6 +87,14 @@ jobs:
           meson --version
           ninja --version
           xcodegen --version
+
+      - name: Validate generated Xcode project
+        working-directory: source/src/app
+        run: |
+          set -euo pipefail
+          xcodegen generate --quiet
+          xcodebuild -list -project Husk.xcodeproj
+          echo "Xcode project generation and scheme discovery passed."
 
       - name: Install Rust and iOS target
         run: |

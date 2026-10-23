@@ -93,7 +93,7 @@ jobs:
         run: |
           set -euo pipefail
           chmod +x scripts/*.sh
-          ./scripts/ci_build.sh "$GITHUB_WORKSPACE/output/Husk.ipa"
+          ./scripts/ci_build.sh "$GITHUB_WORKSPACE/output/DroidOS.ipa"
 
       - name: Encrypt IPA before upload
         if: success()
@@ -105,19 +105,19 @@ jobs:
           mkdir -p output
           openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
             -pass env:HUSK_ARTIFACT_PASSWORD \
-            -in output/Husk.ipa -out output/Husk.ipa.enc
-          if [ -f output/Husk.tipa ]; then
+            -in output/DroidOS.ipa -out output/DroidOS.ipa.enc
+          if [ -f output/DroidOS.tipa ]; then
             openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
               -pass env:HUSK_ARTIFACT_PASSWORD \
-              -in output/Husk.tipa -out output/Husk.tipa.enc
+              -in output/DroidOS.tipa -out output/DroidOS.tipa.enc
           fi
-          rm -f output/Husk.ipa output/Husk.tipa
+          rm -f output/DroidOS.ipa output/DroidOS.tipa
 
       - name: Upload encrypted package and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: husk-encrypted-build-${{ github.run_number }}
+          name: droidos-encrypted-build-${{ github.run_number }}
           path: |
             output/*.enc
             source/build/logs/

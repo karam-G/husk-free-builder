@@ -1,0 +1,104 @@
+name: Build DroidOS Native IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - .github/workflows/build-droidos-native.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: droidos-native-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: xcode-27
+    timeout-minutes: 20
+    steps:
+      - name: Check out public builder
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Check out private DroidOS source
+        uses: actions/checkout@v4
+        with:
+          repository: karam-G/Husk-Audit
+          ref: droidos-native-shell
+          token: ${{ secrets.HUSK_READ_TOKEN }}
+          path: source
+          persist-credentials: false
+
+      - name: Verify Apple toolchain
+        run: |
+          set -euo pipefail
+          xcodebuild -version
+          swift --version
+          xcrun --sdk iphoneos --show-sdk-version
+
+      - name: Install XcodeGen
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: "1"
+        run: |
+          set -euo pipefail
+          if ! command -v xcodegen >/dev/null 2>&1; then
+            brew install xcodegen
+          fi
+          xcodegen --version
+
+      - name: Validate source and project metadata
+        working-directory: source/DroidOSNative
+        run: |
+          set -euo pipefail
+          swiftc -frontend -parse Sources/DroidOSApp.swift Sources/ContentView.swift
+          plutil -lint Info.plist
+          xcodegen generate --quiet
+          xcodebuild -list -project DroidOSNative.xcodeproj
+          echo "Swift syntax, plist, and Xcode project generation passed."
+
+      - name: Build unsigned iPhone app
+        working-directory: source/DroidOSNative
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -project DroidOSNative.xcodeproj \
+            -scheme DroidOS \
+            -sdk iphoneos \
+            -configuration Release \
+            -derivedDataPath "$RUNNER_TEMP/droidos-derived" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package and encrypt IPA
+        env:
+          HUSK_ARTIFACT_PASSWORD: ${{ secrets.HUSK_ARTIFACT_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$HUSK_ARTIFACT_PASSWORD"
+          APP_PATH="$RUNNER_TEMP/droidos-derived/Build/Products/Release-iphoneos/DroidOS.app"
+          test -d "$APP_PATH"
+          mkdir -p output/Payload
+          cp -R "$APP_PATH" output/Payload/DroidOS.app
+          (cd output && zip -qr DroidOS.ipa Payload)
+          openssl enc -aes-256-cbc -salt -pbkdf2 -iter 200000 \
+            -pass env:HUSK_ARTIFACT_PASSWORD \
+            -in output/DroidOS.ipa -out output/DroidOS.ipa.enc
+          rm -f output/DroidOS.ipa
+          rm -rf output/Payload
+          test -s output/DroidOS.ipa.enc
+
+      - name: Upload encrypted IPA and build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: droidos-native-encrypted-build-${{ github.run_number }}
+          path: |
+            output/*.enc
+            source/DroidOSNative/*.log
+          if-no-files-found: warn
+          retention-days: 3

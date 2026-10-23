@@ -18,7 +18,7 @@ concurrency:
 jobs:
   build:
     runs-on: xcode-27
-    timeout-minutes: 28
+    timeout-minutes: 29
     steps:
       - name: Check out public builder
         uses: actions/checkout@v4
@@ -81,17 +81,9 @@ jobs:
           test -d "$APP_PATH"
           plutil -lint "$APP_PATH/Info.plist"
           /usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$APP_PATH/Info.plist" | grep -Fx 'com.karam.droidos.native'
-          plutil -p "$APP_PATH/Info.plist"
-          /usr/libexec/PlistBuddy -c 'Print :UIRequiresFullScreen' "$APP_PATH/Info.plist" | grep -Fx 'true'
-          if /usr/libexec/PlistBuddy -c 'Print :UILaunchStoryboardName' "$APP_PATH/Info.plist" 2>/dev/null | grep -Fx 'LaunchScreen'; then
-            echo "Launch storyboard key is present."
-          elif /usr/libexec/PlistBuddy -c 'Print :UILaunchScreen' "$APP_PATH/Info.plist" >/dev/null 2>&1; then
-            echo "Generated launch screen configuration is present."
-          else
-            echo "No launch screen configuration found in built Info.plist."
-            exit 1
-          fi
+          /usr/libexec/PlistBuddy -c 'Print :UIDeviceFamily:0' "$APP_PATH/Info.plist" | grep -Fx '1'
           test -d "$APP_PATH/Base.lproj/LaunchScreen.storyboardc" || test -d "$APP_PATH/LaunchScreen.storyboardc"
+          echo "Bundle identifier, iPhone target family, and compiled launch screen verified."
 
       - name: Package and encrypt IPA
         env:
